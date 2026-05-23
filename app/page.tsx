@@ -52,7 +52,7 @@ function BigNumber({ value }: { value: number }) {
       style={{
         fontFamily: "var(--font-serif), 'Times New Roman', serif",
         fontWeight: 400,
-        fontSize: "clamp(140px, 30vw, 520px)",
+        fontSize: "clamp(80px, 28vw, 520px)",
         lineHeight: 0.85,
         letterSpacing: "-0.03em",
         display: "flex",
@@ -124,8 +124,8 @@ export default function Home() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 56,
-        padding: 40,
+        gap: "clamp(32px, 8vw, 56px)",
+        padding: "clamp(20px, 5vw, 40px)",
         boxSizing: "border-box",
       }}
     >
