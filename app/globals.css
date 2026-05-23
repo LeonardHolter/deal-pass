@@ -1,0 +1,41 @@
+:root {
+  --bg: #eef2ee;
+  --fg: #101512;
+  --accent: #3f7d58;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+}
+
+@keyframes tickerIn {
+  from { transform: translateY(0.4em); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes tickerOut {
+  from { transform: translateY(0); opacity: 1; }
+  to   { transform: translateY(-0.4em); opacity: 0; }
+}
+
+.digit-in {
+  animation: tickerIn 0.32s cubic-bezier(.2,.7,.2,1) both;
+}
+
+.digit-out {
+  animation: tickerOut 0.32s cubic-bezier(.6,0,.6,.3) both;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
