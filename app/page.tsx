@@ -1,12 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-
-const STORAGE_KEY = "pass-on:count:v1";
-
-function fmt(n: number): string {
-  return n.toLocaleString("en-US");
-}
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /* ---------- Animated big number ---------- */
 
@@ -15,6 +9,10 @@ interface Token {
   ch: string;
   state: "in" | "stay";
   out?: string;
+}
+
+function fmt(n: number): string {
+  return n.toLocaleString("en-US");
 }
 
 function BigNumber({ value }: { value: number }) {
@@ -78,7 +76,7 @@ function BigNumber({ value }: { value: number }) {
             className={t.state === "in" ? "digit-in" : ""}
             style={{ display: "inline-block" }}
           >
-            {t.ch === " " ? " " : t.ch}
+            {t.ch === " " ? " " : t.ch}
           </span>
           {t.state === "in" && t.out && t.out !== " " ? (
             <span className="digit-out" style={{ display: "inline-block" }}>
@@ -95,22 +93,39 @@ function BigNumber({ value }: { value: number }) {
 
 export default function Home() {
   const [count, setCount] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
 
+  // Fetch current count on load
   useEffect(() => {
-    try {
-      const v = localStorage.getItem(STORAGE_KEY);
-      setCount(v ? parseInt(v, 10) || 0 : 0);
-    } catch {
-      setCount(0);
-    }
+    fetch("/api/count")
+      .then((r) => r.json())
+      .then((d) => setCount(d.count))
+      .catch(() => setCount(0));
   }, []);
 
-  useEffect(() => {
-    if (count === null) return;
+  const act = useCallback(async (action: "increment" | "decrement") => {
+    if (busy) return;
+    setBusy(true);
+    // Optimistic update
+    setCount((c) =>
+      action === "increment" ? (c ?? 0) + 1 : Math.max(0, (c ?? 0) - 1)
+    );
     try {
-      localStorage.setItem(STORAGE_KEY, String(count));
-    } catch {}
-  }, [count]);
+      const res = await fetch("/api/count", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      setCount(data.count);
+    } catch {
+      // revert on error
+      setCount((c) =>
+        action === "increment" ? (c ?? 0) - 1 : (c ?? 0) + 1
+      );
+    }
+    setBusy(false);
+  }, [busy]);
 
   if (count === null) return null;
 
@@ -153,7 +168,8 @@ export default function Home() {
         }}
       >
         <button
-          onClick={() => setCount((c) => (c ?? 0) + 1)}
+          onClick={() => act("increment")}
+          disabled={busy}
           style={{
             background: "var(--accent)",
             color: "#fff",
@@ -163,7 +179,7 @@ export default function Home() {
             fontSize: 13,
             textTransform: "uppercase",
             letterSpacing: "0.14em",
-            cursor: "pointer",
+            cursor: busy ? "wait" : "pointer",
             borderRadius: 2,
             transition: "transform 0.08s ease",
           }}
@@ -176,8 +192,8 @@ export default function Home() {
           + pass on another
         </button>
         <button
-          onClick={() => setCount((c) => Math.max(0, (c ?? 0) - 1))}
-          disabled={count === 0}
+          onClick={() => act("decrement")}
+          disabled={count === 0 || busy}
           style={{
             background: "transparent",
             color: "var(--fg)",
@@ -187,7 +203,7 @@ export default function Home() {
             fontSize: 10,
             textTransform: "uppercase",
             letterSpacing: "0.16em",
-            cursor: count === 0 ? "not-allowed" : "pointer",
+            cursor: count === 0 || busy ? "not-allowed" : "pointer",
             opacity: count === 0 ? 0.25 : 0.5,
             transition: "opacity 0.15s ease",
           }}
